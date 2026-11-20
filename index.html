@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NEXUS CASINO</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#090b10;color:#fff;font-family:Arial,sans-serif}
+header{padding:20px;background:#11151d;border-bottom:1px solid #292f3b;display:flex;justify-content:space-between;align-items:center}
+.logo{font-size:24px;font-weight:900;color:#f5c451}
+.balance{background:#202632;padding:12px;border-radius:12px;color:#f5c451;font-weight:bold}
+main{max-width:850px;margin:auto;padding:18px}
+h2{color:#f5c451}
+.hero{padding:25px;border-radius:18px;background:linear-gradient(120deg,#252b3c,#10131b);margin-bottom:22px}
+.hero h1{font-size:30px;margin:0 0 10px}
+.games{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.game{background:#171d27;border:1px solid #303948;border-radius:15px;padding:20px;text-align:center;cursor:pointer}
+.game b{display:block;font-size:19px;margin-top:10px}
+.game span{font-size:36px}
+.panel{background:#151a23;border:1px solid #303948;border-radius:18px;padding:20px;margin-top:18px}
+button{background:#e9b947;color:#151515;border:0;padding:13px 19px;border-radius:10px;font-weight:bold;cursor:pointer}
+button:disabled{opacity:.5}
+input,select{background:#252c39;color:white;padding:12px;border:1px solid #424b5b;border-radius:9px;width:100%;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;margin:18px 0}
+.cell{aspect-ratio:1;background:#303d50;border-radius:9px;font-size:22px;padding:0;color:white}
+.cell.open{background:#d5a936}
+.cell.bomb{background:#a52e36}
+.big{font-size:38px;font-weight:bold;text-align:center;color:#f5c451;padding:20px}
+.hidden{display:none}
+footer{text-align:center;padding:30px;color:#697386;font-size:12px}
+</style>
+</head>
+<body>
+<header>
+<div class="logo">✦ NEXUS</div>
+<div class="balance">🪙 <span id="balance">10000</span></div>
+</header>
+<main>
+<div class="hero">
+<h1>NEXUS CASINO</h1>
+<p>Твоя игровая вселенная начинается здесь.</p>
+<button onclick="showHome()">Играть сейчас</button>
+</div>
+
+<section id="home">
+<h2>Популярные игры</h2>
+<div class="games">
+<div class="game" onclick="openGame('mines')"><span>💣</span><b>MINES</b><small>Найди драгоценности</small></div>
+<div class="game" onclick="openGame('crash')"><span>🚀</span><b>CRASH</b><small>Поймай множитель</small></div>
+<div class="game" onclick="openGame('plinko')"><span>🔮</span><b>PLINKO</b><small>Испытай удачу</small></div>
+<div class="game" onclick="openGame('slots')"><span>🎰</span><b>SLOTS</b><small>Вращай барабаны</small></div>
+</div>
+</section>
+
+<section id="mines" class="panel hidden">
+<button onclick="showHome()">← Назад</button>
+<h2>💣 MINES</h2>
+<p>Открой безопасные клетки и забери выигрыш.</p>
+<label>Ставка</label><input id="mineBet" type="number" value="100" min="1">
+<label>Количество мин</label>
+<select id="mineCount"><option>3</option><option>5</option><option>7</option><option>10</option></select>
+<button onclick="startMines()">Начать игру</button>
+<div class="grid" id="mineGrid"></div>
+<div id="mineInfo">Выбери ставку и начни игру</div>
+<button id="cashMine" class="hidden" onclick="cashMines()">Забрать выигрыш</button>
+</section>
+
+<section id="crash" class="panel hidden">
+<button onclick="showHome()">← Назад</button>
+<h2>🚀 CRASH</h2>
+<div class="big" id="multiplier">1.00x</div>
+<p id="crashInfo">Успей забрать виртуальный выигрыш!</p>
+<label>Ставка</label><input id="crashBet" type="number" value="100" min="1">
+<button id="crashStart" onclick="startCrash()">Начать</button>
+<button id="crashCash" class="hidden" onclick="cashCrash()">Забрать</button>
+</section>
+
+<section id="plinko" class="panel hidden">
+<button onclick="showHome()">← Назад</button>
+<h2>🔮 PLINKO</h2>
+<p>Запусти шарик и посмотри, куда он попадёт.</p>
+<label>Ставка</label><input id="plinkoBet" type="number" value="100" min="1">
+<button onclick="playPlinko()">Бросить шарик</button>
+<div class="big" id="plinkoResult">🔮</div>
+<div id="plinkoInfo"></div>
+</section>
+
+<section id="slots" class="panel hidden">
+<button onclick="showHome()">← Назад</button>
+<h2>🎰 NEXUS SLOTS</h2>
+<div class="big" id="reels">🍒 | ⭐ | 💎</div>
+<label>Ставка</label><input id="slotBet" type="number" value="100" min="1">
+<button onclick="spinSlots()">Крутить барабаны</button>
+<div id="slotInfo"></div>
+</section>
+</main>
+<footer>NEXUS CASINO · DEMO VERSION · ВИРТУАЛЬНЫЕ МОНЕТЫ</footer>
+
+<script>
+let balance=10000;
+let active=false, mines=[],opened=0,mineStake=0;
+let crashTimer=null,mult=1,crashStake=0,crashPoint=0;
+let symbols=["🍒","⭐","💎","🔔","7️⃣","🍀"];
+
+function update(){
+ document.getElementById("balance").textContent=Math.floor(balance);
+}
+function bet(id){
+ let n=Number(document.getElementById(id).value);
+ if(!Number.isFinite(n)||n<1||n>balance||!Number.isInteger(n)){
+ alert("Проверь ставку и баланс");return 0;
+ }
+ return n;
+}
+function showHome(){
+ if(crashTimer){clearInterval(crashTimer);crashTimer=null;}
+ active=false;
+ document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));
+ document.getElementById("home").classList.remove("hidden");
+}
+function openGame(name){
+ if(crashTimer){clearInterval(crashTimer);crashTimer=null;}
+ active=false;
+ document.querySelectorAll("main section").forEach(x=>x.classList.add("hidden"));
+ document.getElementById(name).classList.remove("hidden");
+}
+function startMines(){
+ if(active)return;
+ let n=bet("mineBet");if(!n)return;
+ mineStake=n;
+ let count=Number(document.getElementById("mineCount").value);
+ balance-=n;update();
+ mines=Array(25).fill(false);
+ let placed=0;
+ while(placed<count){
+ let i=Math.floor(Math.random()*25);
+ if(!mines[i]){mines[i]=true;placed++;}
+ }
+ opened=0;active=true;
+ document.getElementById("mineGrid").innerHTML="";
+ for(let i=0;i<25;i++){
+ let b=document.createElement("button");
+ b.className="cell";b.textContent="?";
+ b.onclick=()=>reveal(i,b);
+ document.getElementById("mineGrid").appendChild(b);
+ }
+ document.getElementById("mineInfo").textContent="Открыто: 0";
+ document.getElementById("cashMine").classList.remove("hidden");
+}
+function reveal(i,b){
+ if(!active||b.classList.contains("open"))return;
+ b.classList.add("open");
+ if(mines[i]){
+ b.textContent="💣";b.classList.add("bomb");
+ active=false;
+ document.querySelectorAll(".cell").forEach((x,j)=>{
+ if(mines[j])x.textContent="💣";
+ });
+ document.getElementById("mineInfo").textContent="Мина! Ставка потеряна.";
+ document.getElementById("cashMine").classList.add("hidden");
+ }else{
+ b.textContent="💎";opened++;
+ document.getElementById("mineInfo").textContent=
+ "Открыто: "+opened+" · Потенциальный выигрыш: "+
+ Math.floor(mineStake*(1+opened*.18));
+ }
+}
+function cashMines(){
+ if(!active||!opened)return;
+ let win=Math.floor(mineStake*(1+opened*.18));
+ balance+=win;update();active=false;
+ document.getElementById("mineInfo").textContent="Получено: "+win+" монет";
+ document.getElementById("cashMine").classList.add("hidden");
+}
+function startCrash(){
+ if(active)return;
+ let n=bet("crashBet");if(!n)return;
+ crashStake=n;balance-=n;update();
+ crashPoint=1.2+Math.random()*4.8;
+ mult=1;active=true;
+ document.getElementById("crashStart").disabled=true;
+ document.getElementById("crashCash").classList.remove("hidden");
+ document.getElementById("crashInfo").textContent="Ракета взлетела!";
+ crashTimer=setInterval(()=>{
+ mult+=.04+mult*.015;
+ document.getElementById("multiplier").textContent=mult.toFixed(2)+"x";
+ if(mult>=crashPoint){
+ clearInterval(crashTimer);crashTimer=null;
+ active=false;
+ document.getElementById("crashInfo").textContent="💥 Краш! Ставка потеряна.";
+ document.getElementById("crashCash").classList.add("hidden");
+ document.getElementById("crashStart").disabled=false;
+ }
+ },100);
+}
+function cashCrash(){
+ if(!active)return;
+ let win=Math.floor(crashStake*mult);
+ balance+=win;update();active=false;
+ clearInterval(crashTimer);crashTimer=null;
+ document.getElementById("crashInfo").textContent="Забрано: "+win+" монет!";
+ document.getElementById("crashCash").classList.add("hidden");
+ document.getElementById("crashStart").disabled=false;
+}
+function playPlinko(){
+ if(active)return;
+ let n=bet("plinkoBet");if(!n)return;
+ balance-=n;
+ let mults=[0,0.5,1,1.5,2,3,1.5,1,0.5,0];
+ let result=mults[Math.floor(Math.random()*mults.length)];
+ let win=Math.floor(n*result);
+ balance+=win;update();
+ document.getElementById("plinkoResult").textContent="🔮 "+result+"x";
+ document.getElementById("plinkoInfo").textContent=
+ result>=1?"Выигрыш: "+win+" монет":"Результат: "+win+" монет";
+}
+function spinSlots(){
+ if(active)return;
+ let n=bet("slotBet");if(!n)return;
+ balance-=n;
+ let r=Array.from({length:3},()=>symbols[Math.floor(Math.random()*symbols.length)]);
+ document.getElementById("reels").textContent=r.join(" | ");
+ let win=0;
+ if(r[0]===r[1]&&r[1]===r[2])win=n*10;
+ else if(r[0]===r[1]||r[1]===r[2]||r[0]===r[2])win=n*2;
+ balance+=win;update();
+ document.getElementById("slotInfo").textContent=
+ win?"🎉 Выигрыш: "+win+" монет!":"Попробуй ещё раз!";
+}
+update();
+</script>
+</body>
+</html>
